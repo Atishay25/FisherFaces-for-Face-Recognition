@@ -15,17 +15,18 @@ class PCA:
         eigenvec = eig_vecs[:, sorted_index]
         W = eigenvec[:, :x_centered.shape[1]]
         V = np.dot(W, x_centered)
-        print(x.shape, self.x_mean.shape, L.shape, W.shape, V.shape)
-        for i in range(V.shape[1]):
-            V[:, i] = V[:, i]/np.linalg.norm(V[:, i])
+        #print(x.shape, self.x_mean.shape, x_centered.shape, L.shape, W.shape, V.shape)
+        for i in range(n):
+            V[i, :] = V[i, :]/np.linalg.norm(V[i, :])
         self.V_k = None
         if light:
-            self.V_k = V[:, 3:self.k+3]
+            self.V_k = V[3:self.k+3, :]
         else:
-            self.V_k = V[:, :self.k]
+            self.V_k = V[:self.k, :]
 
     def transform(self,x):
-        output = - (x-self.x_mean.reshape(1,-1)) @ self.V_k
+        x_centered = x - self.x_mean
+        output = x_centered @ self.V_k.T
         return output
         
 

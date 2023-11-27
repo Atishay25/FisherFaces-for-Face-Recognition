@@ -3,6 +3,7 @@ from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 class YaleDataset(object):
     def __init__(self, data_path):
         super(YaleDataset, self).__init__()
@@ -50,16 +51,23 @@ class YaleDataset(object):
                     glass_pids.append(pid)
         # print(img_read_per_person, num_train, num_test) #[11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11] 105 60
         # here they did argsort, Idk why
+        self.X_test = (self.X_test).T
+        self.X_train = (self.X_train).T
+        print(self.X_train.shape, self.X_test.shape)
 
 class YaleB(object):
     def __init__(self, data_path):
         super(YaleB, self).__init__()
         self.data_path = data_path
         self.n = 2470
-        self.X_train = np.zeros((1482,32256))
-        self.y_train = np.zeros((1482), dtype=np.int32)
-        self.X_test = np.zeros((988,32256))
-        self.y_test = np.zeros((988), dtype=np.int32)
+        #self.X_train = np.zeros((1482,32256))
+        #self.y_train = np.zeros((1482), dtype=np.int32)
+        #self.X_test = np.zeros((988,32256))
+        #self.y_test = np.zeros((988), dtype=np.int32)
+        self.X_train = []
+        self.y_train = []
+        self.X_test = []
+        self.y_test = []
     def load_data(self):
         train_indices = [None]*38
         img_read_per_person = [0]*38
@@ -76,44 +84,76 @@ class YaleB(object):
                 if pid > 13:
                     pid -= 1
                 if img_read_per_person[pid] in train_indices[pid]:
-                    self.X_train[num_train,:] = image.flatten()
-                    self.y_train[num_train] = pid
+                    #self.X_train[num_train,:] = image.reshape(-1)
+                    #self.y_train[num_train] = pid
+                    self.X_train.append(image.reshape(-1))
+                    self.y_train.append(pid)
                     num_train += 1
                 else:
-                    self.X_test[num_test,:] = image.flatten()
-                    self.y_test[num_test] = pid
+                    #self.X_test[num_test,:] = image.reshape(-1)
+                    #self.y_test[num_test] = pid
+                    self.X_test.append(image.reshape(-1))
+                    self.y_test.append(pid)
                     num_test += 1
                 img_read_per_person[pid] += 1
-        #print(img_read_per_person, num_train, num_test)
-        #print(img_read_per_person, self.X_train.shape[0], self.X_test.shape[0])
-        # sort and take nonzero indices
         #idx = np.argsort(self.y_train)
         #self.X_train = self.X_train[idx,:]
         #self.y_train = self.y_train[idx]
-#
         #idx = np.argsort(self.y_test)
         #self.X_test = self.X_test[idx,:]
         #self.y_test = self.y_test[idx]
-        #print(img_read_per_person, self.X_train.shape[0], self.X_test.shape[0])
+        self.X_test = np.array(self.X_test).T
+        self.X_train = np.array(self.X_train).T
+        self.y_test = np.array(self.y_test).T
+        self.y_train = np.array(self.y_train).T
 
-def ld(data_path, save_path):
-    if not os.path.isdir(save_path):
-        os.mkdir(save_path)
-
-    for f in os.listdir(data_path):
-        if not 'txt' in f and not 'DS_Store' in f and not 'zip' in f:
-            image = Image.open(data_path + '/' + f)
-            subject_num = f.split('.')[0]
-            img_path = save_path + '/' + subject_num + '/' + f + '.jpg'
-            if not os.path.isdir(save_path + '/' + subject_num):
-                os.mkdir(save_path + '/' + subject_num)
-            if not os.path.isfile(img_path):
-                image.save(img_path)
+class CMU_Dataset(object):
+    def __init__(self, data_path):
+        super(CMU_Dataset, self).__init__()
+        self.data_path = data_path
+        self.X_train = np.zeros((1, 15360))
+        self.y_train = []
+        self.X_test = np.zeros((1, 15360))
+        self.y_test = []
+        self.c = 0
 
 
-if __name__ == '__main__':
-    #yale = YaleDataset('./../data/yale')
-    #yale.load_data()
+    def readpgm(self, name):
+        with open(name) as f:
+            lines = f.readlines()
+        # here,it makes sure it is ASCII format (P2)
+        assert lines[0].strip() == 'P2' 
+        # Converts data to a list of integers
+        data = []
+        for line in lines[1:]:
+            data.extend([int(c) for c in line.split()])
+        return (np.array(data[3:]),(data[1],data[0]),data[2])
 
-    yale_B = YaleB('./../data/yaleB')
-    yale_B.load_data()
+
+    def load_data(self):
+        np.random.seed(0)
+
+        for dir1 in os.listdir(self.data_path):
+            choice = np.random.permutation(list(range(0, 32)))
+            i=0
+            if not os.path.isdir(os.path.join(self.data_path, dir1)):
+                continue
+            for file in os.listdir(os.path.join(self.data_path, dir1)):
+                image_path = os.path.join(self.data_path, dir1,  file)
+                image, img_size, img_max = self.readpgm(image_path)
+                image = np.resize(image,(1, 15360))
+                image = image.astype('float32')
+                if choice[i]%3==0:
+                    self.X_test = np.concatenate((self.X_test, image), axis = 0)
+                    self.y_test.append(self.c)
+                else:
+                    self.X_train = np.concatenate((self.X_train, image), axis = 0)
+                    self.y_train.append(self.c)
+                i=i+1
+            self.c=self.c+1
+        self.X_train = self.X_train[1:].T
+        self.X_test = self.X_test[1:].T
+        self.y_test = np.array(self.y_test)
+        self.y_train = np.array(self.y_train)
+        return self.X_train[1:] , np.array(self.y_train), self.X_test[1:] , np.array(self.y_test)
+

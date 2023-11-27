@@ -4,29 +4,41 @@ import numpy as np
 class PCA:
     def __init__(self, n_components):
         self.k = n_components
-
     def fit(self,x, light):
-        n = x.shape[0]
-        self.x_mean = np.mean(x, axis=0)
+        n = x.shape[1]
+        self.x_mean = (np.mean(x, axis=1)).reshape(-1,1)
+        print(self.x_mean.shape)
         x_centered = x - self.x_mean
-        L = np.dot(x_centered, x_centered.T)/(n-1)
+        print(x.shape)
+        L = np.dot(x_centered.T,x_centered)/(n-1)
         eig_vals, eig_vecs = np.linalg.eig(L)
+        '''
+        sorted_index = np.argsort(eig_vals)[::-1]
+        if light:
+            sorted_index = sorted_index[3:self.k+3]
+        else:
+            sorted_index = sorted_index[:self.k]
+        V = x.T @ eig_vecs
+        for i in range(n):
+            V[i, :] = V[i, :]/(np.linalg.norm(V[i, :])+1e-8)
+        self.V_k = V[:,sorted_index]
+        '''
         sorted_index = np.argsort(eig_vals)[::-1]
         eigenvec = eig_vecs[:, sorted_index]
         W = eigenvec[:, :x_centered.shape[1]]
-        V = np.dot(W, x_centered)
+        V = x_centered @ W
         #print(x.shape, self.x_mean.shape, x_centered.shape, L.shape, W.shape, V.shape)
         for i in range(n):
-            V[i, :] = V[i, :]/np.linalg.norm(V[i, :])
+            V[:,i] = V[:,i]/np.linalg.norm(V[:,i])
         self.V_k = None
         if light:
-            self.V_k = V[3:self.k+3, :]
+            self.V_k = V[:,3:self.k+3]
         else:
-            self.V_k = V[:self.k, :]
+            self.V_k = V[:,:self.k]
 
     def transform(self,x):
         x_centered = x - self.x_mean
-        output = x_centered @ self.V_k.T
+        output = self.V_k.T @ x_centered
         return output
         
 

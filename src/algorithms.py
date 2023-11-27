@@ -2,20 +2,32 @@ import os
 import numpy as np
 
 class PCA:
-    def __init__(self, k):
-        self.k = k
+    def __init__(self, n_components):
+        self.k = n_components
 
-    def fit(self,x):
+    def fit(self,x, light):
         n = x.shape[0]
-        L = np.dot(x.T, x)/n
+        self.x_mean = np.mean(x, axis=0)
+        x_centered = x - self.x_mean
+        L = np.dot(x_centered, x_centered.T)/(n-1)
         eig_vals, eig_vecs = np.linalg.eig(L)
         sorted_index = np.argsort(eig_vals)[::-1]
         eigenvec = eig_vecs[:, sorted_index]
-        W = eigenvec[:, :x.shape[1]]
-        V = np.dot(x, W)
+        W = eigenvec[:, :x_centered.shape[1]]
+        V = np.dot(W, x_centered)
+        print(x.shape, self.x_mean.shape, L.shape, W.shape, V.shape)
         for i in range(V.shape[1]):
             V[:, i] = V[:, i]/np.linalg.norm(V[:, i])
-        V_k = V[:, :self.k]
+        self.V_k = None
+        if light:
+            self.V_k = V[:, 3:self.k+3]
+        else:
+            self.V_k = V[:, :self.k]
+
+    def transform(self,x):
+        output = - (x-self.x_mean.reshape(1,-1)) @ self.V_k
+        return output
+        
 
 class Linear_discriminant_Analysis:
     def __init__(self, out_dim=1):
@@ -87,16 +99,16 @@ class Fisherfaces:
         
         self.fisher_ld = Linear_discriminant_Analysis(out_dim=self.num_components)
         ##############  here add code for self.pca = PCA() ###############
-        #self.pca = PCA(k = self.n - self.c)
+        self.pca = PCA(k = self.n - self.c)
         ##############  here add code to change X according to PCA algorithm ###############
-        #modified_X = self.pca.fit_transform(X)
-        self.fisher_ld.fit(X, labels)
+        modified_X = self.pca.fit_transform(X)
+        self.fisher_ld.fit(modified_X, labels)
         self.labels = labels
 
-    def predict(self, image):
+    def predict(self, X):
         # Project the input image onto the subspace
         ##############  here add code to change "image" to be transformed according to PCA algorithm ###############
-        # image = self.pca.transform(X)
+        image = self.pca.transform(X)
         projected_image = np.dot(image - self.fisher_ld.mean_face, self.fisher_ld.W)
 
         # Find the nearest neighbor in the subspace

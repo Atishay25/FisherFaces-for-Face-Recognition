@@ -51,9 +51,15 @@ class YaleDataset(object):
                     glass_pids.append(pid)
         # print(img_read_per_person, num_train, num_test) #[11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11] 105 60
         # here they did argsort, Idk why
-        self.X_test = (self.X_test).T
-        self.X_train = (self.X_train).T
-        print(self.X_train.shape, self.X_test.shape)
+        #self.X_test = (self.X_test).T
+        #self.X_train = (self.X_train).T
+
+        #idxs = np.argsort(self.y_train)
+        #self.y_train = self.y_train[idxs]
+        #self.X_train = self.X_train[idxs,:]
+        #idxs = np.argsort(self.y_test)
+        #self.y_test = self.y_test[idxs]
+        #self.X_test = self.X_test[idxs,:]
 
 class YaleB(object):
     def __init__(self, data_path):
@@ -102,10 +108,16 @@ class YaleB(object):
         #idx = np.argsort(self.y_test)
         #self.X_test = self.X_test[idx,:]
         #self.y_test = self.y_test[idx]
-        self.X_test = np.array(self.X_test).T
-        self.X_train = np.array(self.X_train).T
-        self.y_test = np.array(self.y_test).T
-        self.y_train = np.array(self.y_train).T
+        self.X_test = np.array(self.X_test)
+        self.X_train = np.array(self.X_train)
+        self.y_test = np.array(self.y_test)
+        self.y_train = np.array(self.y_train)
+        idxs = np.argsort(self.y_train)
+        self.y_train = self.y_train[idxs]
+        self.X_train = self.X_train[idxs,:]
+        idxs = np.argsort(self.y_test)
+        self.y_test = self.y_test[idxs]
+        self.X_test = self.X_test[idxs,:]
 
 class CMU_Dataset(object):
     def __init__(self, data_path):
@@ -151,9 +163,9 @@ class CMU_Dataset(object):
                     self.y_train.append(self.c)
                 i=i+1
             self.c=self.c+1
-        self.X_train = self.X_train[1:].T
-        self.X_test = self.X_test[1:].T
+        self.X_train = self.X_train[1:]
+        self.X_test = self.X_test[1:]
         self.y_test = np.array(self.y_test)
         self.y_train = np.array(self.y_train)
-        return self.X_train[1:] , np.array(self.y_train), self.X_test[1:] , np.array(self.y_test)
+        #return self.X_train[1:] , np.array(self.y_train), self.X_test[1:] , np.array(self.y_test)
 

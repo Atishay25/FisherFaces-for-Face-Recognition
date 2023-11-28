@@ -10,11 +10,11 @@ class YaleDataset(object):
         self.data_path = data_path
         self.n = 165
         self.X_train = np.zeros((105,77760))
-        self.y_train = np.zeros((105,1), dtype=np.int32)
+        self.y_train = np.zeros((105), dtype=np.int32)
         self.X_test = np.zeros((60,77760))
-        self.y_test = np.zeros((60,1), dtype=np.int32)
+        self.y_test = np.zeros((60), dtype=np.int32)
         self.X_glasses = np.zeros((30,77760))
-        self.y_glasses = np.zeros((30,1), dtype=np.int32)
+        self.y_glasses = np.zeros((30), dtype=np.int32)
         
     def load_data(self):
         train_indices = [None]*15
@@ -39,14 +39,14 @@ class YaleDataset(object):
                     self.y_test[num_test] = pid
                     num_test += 1
                 img_read_per_person[pid] += 1
-                if 'glasses' in f:
-                    self.X_glasses[pid,:] = image.flatten()
-                    self.y_glasses[pid] = 1
+                if 'noglasses' in f:
+                    self.X_glasses[num_glasses,:] = image.flatten()
+                    self.y_glasses[num_glasses] = 0
                     num_glasses += 1
                     glass_pids.append(pid)
-                elif 'noglasses' in f:
-                    self.X_glasses[pid,:] = image.flatten()
-                    self.y_glasses[pid] = 0
+                elif 'glasses' in f:
+                    self.X_glasses[num_glasses,:] = image.flatten()
+                    self.y_glasses[num_glasses] = 1
                     num_glasses += 1
                     glass_pids.append(pid)
         # print(img_read_per_person, num_train, num_test) #[11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11] 105 60
@@ -57,19 +57,20 @@ class YaleDataset(object):
         #idxs = np.argsort(self.y_train)
         #self.y_train = self.y_train[idxs]
         #self.X_train = self.X_train[idxs,:]
+#
         #idxs = np.argsort(self.y_test)
         #self.y_test = self.y_test[idxs]
         #self.X_test = self.X_test[idxs,:]
+#
+        #idxs = np.argsort(self.y_glasses)
+        #self.y_glasses = self.y_glasses[idxs]
+        #self.X_glasses = self.X_glasses[idxs,:]
 
 class YaleB(object):
     def __init__(self, data_path):
         super(YaleB, self).__init__()
         self.data_path = data_path
         self.n = 2470
-        #self.X_train = np.zeros((1482,32256))
-        #self.y_train = np.zeros((1482), dtype=np.int32)
-        #self.X_test = np.zeros((988,32256))
-        #self.y_test = np.zeros((988), dtype=np.int32)
         self.X_train = []
         self.y_train = []
         self.X_test = []

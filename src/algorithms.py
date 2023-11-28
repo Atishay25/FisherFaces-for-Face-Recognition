@@ -2,7 +2,7 @@ import os
 import numpy as np
 import scipy
 
-class PCA:
+class PCA(object):
     def __init__(self, n_components):
         self.k = n_components
     def fit(self,x, light=False):         # x := n x d
@@ -42,9 +42,10 @@ class PCA:
         
 
 class Linear_discriminant_Analysis:
-    def __init__(self, out_dim=1):
+    def __init__(self, dataset, out_dim=1):
         super(Linear_discriminant_Analysis, self).__init__()
         self.out_dim = out_dim
+        self.dataset = dataset
 
     def fit(self, X, labels):       # X: nxd
         self.n = X.shape[0]
@@ -60,6 +61,8 @@ class Linear_discriminant_Analysis:
         labels_ = np.reshape(labels, (labels.shape[0]))
         for label in unique_labels:
             idxs = (labels_ == label)
+            if self.dataset == 'cmu':
+                idxs = 1*idxs
             x_classed.append(X[idxs,:])
             num_i.append(np.sum(idxs))
             class_mean_faces.append(np.mean(X[idxs,:],axis=0).reshape(-1,1))
@@ -78,8 +81,8 @@ class Linear_discriminant_Analysis:
         for i in range(self.c):
             v = class_mean_faces[i] - self.mean_face
             norm_xclass = x_classed[i] - class_mean_faces[i].reshape(1,-1)
-            Sb += (num_i[i]*(v @ v.T))
-            Sw += (norm_xclass.T @ norm_xclass)
+            Sb = Sb + (num_i[i]*(v @ v.T))
+            Sw = Sw + (norm_xclass.T @ norm_xclass)
 
         #for label, class_mean_face in zip(unique_labels, class_mean_faces):
         #    class_images = X[labels_ == label,:]
@@ -110,9 +113,10 @@ class Linear_discriminant_Analysis:
 
 
 class Fisherfaces:
-    def __init__(self, num_components=1):
+    def __init__(self,dataset,num_components=1):
         super(Fisherfaces, self).__init__()
         self.num_components = num_components
+        self.dataset= dataset
 
     def fit(self, X, labels):
         self.n = X.shape[0]
@@ -120,7 +124,7 @@ class Fisherfaces:
         self.c = labels.max()+1
         ##############  here add code for self.pca = PCA() ###############
         self.pca = PCA(n_components=self.n - self.c)
-        self.fisher_ld = Linear_discriminant_Analysis(out_dim=self.num_components)
+        self.fisher_ld = Linear_discriminant_Analysis(self.dataset,out_dim=self.num_components)
         ##############  here add code to change X according to PCA algorithm ###############
         self.pca.fit(X)
         modified_X = self.pca.transform(X)
@@ -129,11 +133,12 @@ class Fisherfaces:
         return self.fisher_ld.transform(self.pca.transform(X))
 
 class FaceRecognitionFisher(object):
-    def __init__(self, out_dim):
+    def __init__(self, out_dim, dataset):
         super(FaceRecognitionFisher, self).__init__()
         self.out_dim = out_dim
+        self.dataset = dataset
     def fit(self, X, labels):
-        self.fishermodel = Fisherfaces(self.out_dim)
+        self.fishermodel = Fisherfaces(self.dataset,self.out_dim)
         self.fishermodel.fit(X,labels)
         self.train_embeds = self.fishermodel.transform(X)
         self.labels = labels

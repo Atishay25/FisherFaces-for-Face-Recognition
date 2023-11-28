@@ -95,15 +95,14 @@ if __name__ == "__main__":
         params = {'eigen': 10, 'eigen_light': 10, 'fisher': 1}
         x_g = dataset.X_glasses
         y_g = dataset.y_glasses
-        print(x_g.shape, y_g.shape)
         n_g = y_g.shape[0]
         for i in range(n_g//2):
             leave1_x = np.delete(x_g, [2*i, 2*i + 1], 0)
             leave1_y = np.delete(y_g, [2*i, 2*i + 1], 0)
             ee, ele, fe = eval_all(leave1_x, leave1_y, x_g[2*i:(2*i + 1),:], y_g[2*i:(2*i + 1)],params,args.dataset)
-            glass_ee += 2*ee
-            glass_ele += 2*ele
-            glass_fe += 2*fe
+            glass_ee += ee
+            glass_ele += ele
+            glass_fe += fe
 
         glass_fe /= n_g
         glass_ee /= n_g

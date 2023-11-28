@@ -62,9 +62,9 @@ class YaleDataset(object):
         #self.y_test = self.y_test[idxs]
         #self.X_test = self.X_test[idxs,:]
 #
-        #idxs = np.argsort(self.y_glasses)
-        #self.y_glasses = self.y_glasses[idxs]
-        #self.X_glasses = self.X_glasses[idxs,:]
+        idxs = np.argsort(self.y_glasses)
+        self.y_glasses = self.y_glasses[idxs]
+        self.X_glasses = self.X_glasses[idxs,:]
 
 class YaleB(object):
     def __init__(self, data_path):

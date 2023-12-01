@@ -1,46 +1,14 @@
-import os
-import cv2
 import numpy as np
-from sklearn.decomposition import PCA
-import matplotlib.pyplot as plt
 import argparse
 from load_data import YaleDataset, YaleB, CMU_Dataset
-from algorithms import PCA, FaceRecognitionFisher
-import random
-from load_cmu import *
+from algorithms import FaceRecognitionFisher, FaceRecognitionEigen
 
-random.seed(0)
-os.environ['PYTHONHASHSEED'] = str(0)
 np.random.seed(0)
-
-class FaceRecognitionEigen(object):
-    def __init__(self, k):
-        self.k = k
-
-    def train(self, x, y_labels, light=False):
-        self.eigen_model = PCA(n_components=self.k)
-        self.eigen_model.fit(x,light)
-        self.alphas = self.eigen_model.transform(x)
-        self.y_labels = y_labels
-
-    def predict(self, x):
-        #eigen_coeff = np.expand_dims(self.alphas, 1)
-        #test_alpha = np.expand_dims(self.eigen_model.transform(x), 0)
-        #diff = np.sum(((test_alpha - eigen_coeff)**2),axis=2)
-        #pred_idx = np.argmin(diff, 0)
-        #return self.y_labels[pred_idx]
-        alpha_p = self.eigen_model.transform(x)
-        preds = []
-        for p in range(x.shape[0]):
-            dist = np.sum((self.alphas - alpha_p[p,:])**2,axis=1)
-            min_ind = np.argmin(dist)
-            preds.append(self.y_labels[min_ind])
-        return np.array(preds)
     
-def error_rate(y_pred, y_true):
-    return 1-(np.sum(1*(y_pred == y_true)))/y_true.shape[0]
+def error_rate(y_pred, y_true):             # error rate = (1 - recognition rate)
+    return (np.sum(1*(y_pred != y_true)))/y_true.shape[0]
     
-def eval_all(x_train, y_train, x_test, y_test, params,dataset):
+def eval_all(x_train, y_train, x_test, y_test, params,dataset):         # evaluate a given dataset on all algorithms
     eigen_model = FaceRecognitionEigen(params['eigen'])
     eigen_model.train(x_train, y_train)
     y_pred = eigen_model.predict(x_test)
@@ -60,7 +28,7 @@ def eval_all(x_train, y_train, x_test, y_test, params,dataset):
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Face Recognition")
-    parser.add_argument("--dataset", type=str, default="yale", help="yale or yaleB or harvard or cmu")
+    parser.add_argument("--dataset", type=str, default="yale", help="Provide dataset: yale or yaleB or cmu",choices=['yale', 'yaleB', 'cmu'])
     args = parser.parse_args()
     data_path = ""
     dataset = None
@@ -88,7 +56,7 @@ if __name__ == "__main__":
     print("EigenFaces : \t\t\t","{:.3f}".format(100*eigen_error))
     print("Eigenfaces (Leaving Top 3) : \t", "{:.3f}".format(100*eigen_light_error))
     print("FisherFaces : \t\t\t", "{:.3f}".format(100*fisher_error))
-    if args.dataset == 'yale':
+    if args.dataset == 'yale':          # Perform Glass Recognition for Yale
         glass_fe = 0
         glass_ee = 0
         glass_ele = 0
@@ -96,14 +64,13 @@ if __name__ == "__main__":
         x_g = dataset.X_glasses
         y_g = dataset.y_glasses
         n_g = y_g.shape[0]
-        for i in range(n_g//2):
+        for i in range(n_g//2):         # Using "Leave One Out" Method to evaluate for Glass Recognition
             leave1_x = np.delete(x_g, [2*i, 2*i + 1], 0)
             leave1_y = np.delete(y_g, [2*i, 2*i + 1], 0)
             ee, ele, fe = eval_all(leave1_x, leave1_y, x_g[2*i:(2*i + 1),:], y_g[2*i:(2*i + 1)],params,args.dataset)
             glass_ee += ee
             glass_ele += ele
             glass_fe += fe
-
         glass_fe /= n_g
         glass_ee /= n_g
         glass_ele /= n_g
@@ -113,34 +80,5 @@ if __name__ == "__main__":
         print("EigenFaces : \t\t\t","{:.3f}".format(100*glass_ee))
         print("Eigenfaces (Leaving Top 3) : \t", "{:.3f}".format(100*glass_ele))
         print("FisherFaces : \t\t\t", "{:.3f}".format(100*glass_fe))
-    #ele:
-    #    tr, tr_c, ts, ts_c=loadDataset('./../data/cmu/')
-#
-    #    model_fischer = FaceRecognitionFisher(19)
-    #    model_fischer.fit(tr, tr_c)
-    #    prediction_fischer = model_fischer.predict(ts)
-#
-    #    model_eigen = FaceRecognitionEigen(19)
-    #    model_eigen.train(tr, tr_c)
-    #    prediction_eigen = model_eigen.predict(ts)
-#
-    #    model_eigen_illum = FaceRecognitionEigen(19)
-    #    model_eigen_illum.train(tr, tr_c,light=True)
-    #    prediction_eigen_illum = model_eigen_illum.predict(ts)
-#
-    #    print("Error Rates:")
-    #    print("Fischer Predictor                            --> {}".format(100*(1 - np.sum(1*(prediction_fischer==ts_c))/ts_c.size)))
-    #    print("Eigen Predictor                              --> {}".format(100*(1 - np.sum(1*(prediction_eigen==ts_c))/ts_c.size)))
-    #    print("Eigen Predictor (without top 3 eigvectors)   --> {}".format(100*(1 - np.sum(1*(prediction_eigen_illum==ts_c))/ts_c.size)))
-    #    ##model = FaceRecognitionEigen(60)
-    #    ##model.train(dataset.X_train, dataset.y_train, light=True)
-        #model = FaceRecognitionFisher(38)
-        #model.fit(dataset.X_train, dataset.y_train)
-        #preds = model.predict(dataset.X_test)
-        ##for i in range(len(preds)):
-        ##    print(preds[i], dataset.y_test[i])
-        #eigen_acc = (np.sum(preds == dataset.y_test))/dataset.y_test.shape[0]
-    #print((1-eigen_acc))
-    #
-    
+
     
